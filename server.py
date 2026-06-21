@@ -224,8 +224,10 @@ class GameSession:
             # Focus pulse energy check
             state['canFocus'] = g.energy >= 3
             socketio.emit('state', state, room=self.sid)
-        except Exception:
-            pass
+        except Exception as e:
+            import traceback
+            print(f'[BROADCAST ERROR] {e}', flush=True)
+            traceback.print_exc()
 
 
 def get_briefing_text() -> dict:
@@ -420,7 +422,7 @@ def _run_configured_game(game, session: GameSession):
     session.debug_god = debug_god
 
     last_tick = time.time()
-    TICK = 1.0 / 15; acc = 0.0; first_frame = True
+    TICK = 1.0 / 10; acc = 0.0; first_frame = True  # 10 FPS for Render stability
 
     while session.running:
         now = time.time(); dt = now - last_tick; last_tick = now; acc += dt
@@ -499,17 +501,22 @@ def _run_configured_game(game, session: GameSession):
             continue
 
         if not g.won and not g.is_dead:
-            mm = {'w': (0, -1), 's': (0, 1), 'a': (-1, 0), 'd': (1, 0),
-                  'up': (0, -1), 'down': (0, 1), 'left': (-1, 0), 'right': (1, 0)}
-            if k in mm: g.move(*mm[k])
-            # Dual pulse: action is now 'scan' or 'focus' from client
-            if k == ' ': g.emit_ping()  # Legacy support
-            if k == 'scan': g.scan_pulse()
-            if k == 'focus': g.focus_pulse()
+            try:
+                mm = {'w': (0, -1), 's': (0, 1), 'a': (-1, 0), 'd': (1, 0),
+                      'up': (0, -1), 'down': (0, 1), 'left': (-1, 0), 'right': (1, 0)}
+                if k in mm: g.move(*mm[k])
+                # Dual pulse: action is now 'scan' or 'focus' from client
+                if k == ' ': g.emit_ping()  # Legacy support
+                if k == 'scan': g.scan_pulse()
+                if k == 'focus': g.focus_pulse()
 
-            ticks = min(int(acc / TICK), 4)
-            for _ in range(ticks): g.tick()
-            acc -= ticks * TICK
+                ticks = min(int(acc / TICK), 4)
+                for _ in range(ticks): g.tick()
+                acc -= ticks * TICK
+            except Exception as e:
+                import traceback
+                print(f'[GAME LOOP ERROR] lvl{g.level if g else "?"}: {e}', flush=True)
+                traceback.print_exc()
         else:
             acc = 0
             if g.is_dead and not getattr(session, '_death_sent', False):
@@ -531,7 +538,8 @@ def _run_configured_game(game, session: GameSession):
                 socketio.emit('gameover', evt, room=session.sid)
 
         session.broadcast_state()
-        time.sleep(0.04)
+        is_render = os.environ.get('RENDER', '') == 'true'
+        time.sleep(0.06 if is_render else 0.04)
 
 
 # ═══════════════════════════════════════════════════════════════════════
