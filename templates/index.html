@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CADMUS STATION v0.001</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- TOP NAVBAR -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<nav class="navbar">
+  <div class="logo"><img id="navLogoIcon" src="" width="18" height="18" style="image-rendering:pixelated;vertical-align:middle;"> CADMUS_STATION<span class="version">v0.001</span></div>
+  <div class="nav-actions" id="navActions">
+    <button class="nav-btn" onclick="showHelp()"><img id="navHelpIcon" src="" width="14" height="14" style="image-rendering:pixelated;vertical-align:middle;"> SYS</button>
+    <button class="nav-btn" id="langBtn" onclick="toggleLang()"><img id="navLangIcon" src="" width="14" height="14" style="image-rendering:pixelated;vertical-align:middle;"> 中/EN</button>
+    <button class="nav-btn" id="muteBtn" onclick="var m=toggleMute();this.textContent=m?'MUTED':'SND:ON';">SND:ON</button>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- SPLASH SCREEN -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<div class="splash-overlay" id="splash">
+  <canvas class="splash-particles" id="splashParticles"></canvas>
+  <div class="splash-scanlines"></div>
+  <div class="splash-title-zh splash-chroma">卡 德 摩 斯 站</div>
+  <div class="splash-title-en splash-chroma">CADMUS SUBSONICS STATION</div>
+  <div class="splash-tagline">声纳系统正常。电池剩余：10。目标是关闭核心，找到幸存者。</div>
+
+  <!-- Difficulty -->
+  <div class="splash-options">
+    <div class="option-group">
+      <label><img id="splashDiffIcon" src="" width="12" height="12" class="pix-hdr"> FACILITY_CLEARANCE</label>
+      <div class="option-btns" id="diffBtns">
+        <button class="opt-btn" data-val="1">LEVEL_A</button>
+        <button class="opt-btn selected" data-val="2">LEVEL_B</button>
+        <button class="opt-btn" data-val="3">LEVEL_C</button>
+      </div>
+    </div>
+    <div class="option-group">
+      <label><img id="splashMapIcon" src="" width="12" height="12" class="pix-hdr"> SECTOR</label>
+      <div class="option-btns" id="mapBtns">
+        <button class="opt-btn" data-val="0">SML</button>
+        <button class="opt-btn selected" data-val="1">MED</button>
+        <button class="opt-btn" data-val="2">LRG</button>
+        <button class="opt-btn" data-val="3">XL</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Theme Swatches -->
+  <div class="option-group" style="margin-bottom:16px;">
+    <label><img id="splashThemeIcon" src="" width="12" height="12" class="pix-hdr"> FACILITY_MODE</label>
+    <div class="theme-swatches" id="themeSwatches"></div>
+  </div>
+
+  <!-- Debug Panel -->
+  <div class="splash-options" id="debugPanel" style="display:none;">
+    <div class="option-group">
+      <label>DEV_MODE</label>
+      <div style="display:flex;gap:4px;">
+        <button class="opt-btn debug-btn" onclick="S.debugGod=!S.debugGod;this.classList.toggle('selected',S.debugGod);">GOD</button>
+        <span style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);line-height:1.8;">LVL:</span>
+        <select id="debugLevel" onchange="S.debugLevel=parseInt(this.value)" style="background:var(--bg-crt);border:1px solid var(--border);color:var(--accent);font-family:var(--font-mono);font-size:10px;">
+          <option value="1">1</option><option value="3">3-Boss</option><option value="6">6-Boss</option>
+          <option value="9">9-Boss</option><option value="10">10-Final</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Character & Modifier -->
+  <div class="splash-options">
+    <div class="option-group">
+      <label><img id="splashWalkerIcon" src="" width="12" height="12" class="pix-hdr"> EXOSKELETON MODEL</label>
+      <button class="opt-btn char-btn" id="charSelectBtn" onclick="showCharModal()">
+        <span id="charSelectLabel">STANDARD MK-I</span>
+      </button>
+    </div>
+    <div class="option-group">
+      <label><img id="splashModIcon" src="" width="12" height="12" class="pix-hdr"> MODIFIERS</label>
+      <button class="opt-btn mod-btn" id="modSelectBtn" onclick="showModModal()">
+        <span id="modSelectLabel">None</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="splash-actions">
+    <button class="btn-primary" onclick="startGame()"><img id="splashStartIcon" src="" width="16" height="16" style="image-rendering:pixelated;vertical-align:middle;">&nbsp; D E P L O Y</button>
+    <div style="display:flex;gap:12px;">
+      <button class="btn-secondary" onclick="showLeaderboard()">[LOG]</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- MAIN GAME LAYOUT -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<div class="main-container" id="mainContainer" style="display:none;">
+
+  <!-- LEFT PANEL -->
+  <aside class="side-panel" id="leftPanel">
+    <div class="panel-section" id="charPanel">
+      <h3><img class="pix-hdr" id="iconWalkerHdr" src="" width="12" height="12"> EXO_STATUS</h3>
+      <div style="text-align:center;" id="charIcon"><img id="charIconImg" src="" width="32" height="32" style="image-rendering:pixelated;"></div>
+      <div style="text-align:center;font-family:var(--font-mono);font-size:13px;color:var(--accent);" id="charName">STANDARD MK-I</div>
+    </div>
+
+    <div class="panel-section">
+      <h3><img class="pix-hdr" id="iconEnergy" src="" width="12" height="12"> BATT</h3>
+      <div class="energy-bar-outer"><div class="energy-bar-inner" id="energyBar" style="width:100%;"></div></div>
+      <div style="text-align:center;font-family:var(--font-mono);font-size:16px;margin-top:4px;" id="energyNum">10/10</div>
+      <div style="font-family:var(--font-mono);font-size:9px;margin-top:4px;">
+        <span style="color:#889;">├ SCAN · 1</span><br>
+        <span id="focusIndicator" style="color:#4488ff;">└ FOCUS · 3</span>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <h3><img class="pix-hdr" id="iconStats" src="" width="12" height="12"> SCAN_RECORD</h3>
+      <div class="stat-row"><span class="stat-label">PULSE</span><span class="stat-value" id="statPings">0</span></div>
+      <div class="stat-row"><span class="stat-label">STEPS</span><span class="stat-value" id="statSteps">0</span></div>
+      <div class="stat-row"><span class="stat-label">RES</span><span class="stat-value glow" id="statScore">0</span></div>
+      <div class="stat-row"><span class="stat-label">LEVEL</span><span class="stat-value" id="statLevel">1</span></div>
+    </div>
+
+    <div class="panel-section" id="comboPanel">
+      <h3><img class="pix-hdr" id="iconCombo" src="" width="12" height="12"> SIGNAL</h3>
+      <div class="fragment-grid" id="fragmentGrid"></div>
+      <div style="text-align:center;font-family:var(--font-mono);font-size:11px;color:#889;margin-top:4px;" id="fragmentProgress">0/18</div>
+    </div>
+
+    <div class="panel-section" id="abilitiesPanel" style="display:none;">
+      <h3><img class="pix-hdr" id="iconAug" src="" width="12" height="12"> AUG</h3>
+      <div class="abilities-list" id="abilitiesList"></div>
+    </div>
+
+    <div class="panel-section" id="itemsPanel" style="display:none;">
+      <h3><img class="pix-hdr" id="iconItems" src="" width="12" height="12"> MODULES</h3>
+      <div id="itemsList" style="font-family:var(--font-mono);font-size:10px;"></div>
+    </div>
+
+    <div class="panel-section" id="msgPanel">
+      <h3><img class="pix-hdr" id="iconMsg" src="" width="12" height="12"> LOG</h3>
+      <div id="gameMsg" style="font-family:var(--font-mono);font-size:10px;color:var(--text-bright);line-height:1.4;min-height:18px;">--</div>
+    </div>
+  </aside>
+
+  <!-- CENTER: CRT MONITOR -->
+  <div class="crt-wrapper">
+    <div class="crt-monitor" id="crtMonitor">
+      <div class="crt-screen">
+        <canvas id="gameCanvas" style="width:100%;height:100%;display:block;image-rendering:pixelated;"></canvas>
+        <div class="scanlines"></div>
+        <div class="vignette"></div>
+        <div class="crt-led"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <aside class="side-panel right" id="rightPanel">
+    <div class="panel-section" id="questPanel" style="display:none;">
+      <h3><img class="pix-hdr" id="iconQuest" src="" width="12" height="12"> OBJECTIVE</h3>
+      <div id="questInfo" style="font-family:var(--font-mono);font-size:11px;text-align:center;"></div>
+    </div>
+
+    <div class="panel-section" id="roomPanel" style="display:none;">
+      <h3><img class="pix-hdr" id="iconRoom" src="" width="12" height="12"> SECTOR</h3>
+      <div id="roomInfo" style="font-family:var(--font-mono);font-size:11px;text-align:center;color:var(--info);"></div>
+    </div>
+
+    <div class="panel-section" id="modsPanel" style="display:none;">
+      <h3><img class="pix-hdr" id="iconMods" src="" width="12" height="12"> MODIFIERS</h3>
+      <div id="modsList" style="font-family:var(--font-mono);font-size:10px;"></div>
+      <div id="modMultiplier" style="font-family:var(--font-mono);font-size:11px;color:var(--warning);margin-top:4px;"></div>
+    </div>
+
+    <div class="panel-section" id="bossPanel" style="display:none;">
+      <h3><img class="pix-hdr" id="iconBoss" src="" width="12" height="12"> THREAT</h3>
+      <div id="bossInfo" style="font-family:var(--font-mono);font-size:11px;"></div>
+    </div>
+
+    <div class="panel-section">
+      <h3><img class="pix-hdr" id="iconRating" src="" width="12" height="12"> RATING</h3>
+      <div style="text-align:center;font-family:var(--font-mono);font-size:28px;font-weight:bold;color:var(--accent);" id="ratingDisplay">--</div>
+    </div>
+  </aside>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- BOTTOM BAR -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<div class="bottom-bar" id="bottomBar" style="display:none;">
+  <span style="color:var(--text-dim);font-family:var(--font-mono);"><img id="botLogIcon" src="" width="12" height="12" style="image-rendering:pixelated;vertical-align:middle;"> SCANNER:</span>
+  <div class="event-log" id="eventLog"></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- SCRIPTS -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<script src="https://cdn.jsdelivr.net/npm/socket.io-client@4.7.5/dist/socket.io.min.js"></script>
+<script src="/static/audio.js"></script>
+<script src="/static/pixel_icons.js"></script>
+<script src="/static/pixel_renderer.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>
