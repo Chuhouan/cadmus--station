@@ -2,13 +2,21 @@
 
 > 你看不见迷宫。你只能听见它的回声。
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Chuhouan/cadmus--station)
+
 卡德摩斯地下声场研究站的主共振核心过载。六个工作人员失联。你穿着旧型号声纳外骨骼爬下去——不依赖光线，只靠超声波回声在完全黑暗中导航。
 
 你的任务是关闭核心，找到幸存者，活着爬出来。但你很快会发现——这不是事故。
 
 ---
 
-## 运行
+## 在线玩
+
+点上面的 **Deploy to Render** 按钮，登录 GitHub 授权，2 分钟后自动生成网址。
+
+> 免费部署，首次打开会休眠唤醒，等 30 秒即可。
+
+## 本地运行
 
 ```bash
 pip install flask flask-socketio
